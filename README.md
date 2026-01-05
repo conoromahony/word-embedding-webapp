@@ -83,11 +83,14 @@ You can customize the application using environment variables:
 ```bash
 export GLOVE_PATH=/path/to/your/glove.6B.50d.txt
 export WORD2VEC_PATH=/path/to/your/GoogleNews-vectors-negative300.bin
+export GLOVE_MAX_WORDS=400000  # Maximum words to load from GloVe (default: 400000)
 ```
 
 By default, the application looks for:
 - GloVe: `embeddings/glove.6B.50d.txt`
 - Word2Vec: `embeddings/GoogleNews-vectors-negative300.bin`
+
+**Performance Note:** Loading 400,000 GloVe embeddings requires significant memory (~1-2 GB). Reduce `GLOVE_MAX_WORDS` if you have memory constraints.
 
 **Server Configuration:**
 ```bash

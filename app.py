@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 # Configuration for embedding file paths
 GLOVE_PATH = os.environ.get('GLOVE_PATH', 'embeddings/glove.6B.50d.txt')
 WORD2VEC_PATH = os.environ.get('WORD2VEC_PATH', 'embeddings/GoogleNews-vectors-negative300.bin')
+GLOVE_MAX_WORDS = int(os.environ.get('GLOVE_MAX_WORDS', '400000'))
 
 # Global variables to store loaded embeddings
 embeddings = {
@@ -23,17 +24,21 @@ embeddings = {
 }
 
 
-def load_glove_embeddings(file_path, max_words=100000):
+def load_glove_embeddings(file_path, max_words=None):
     """
     Load GloVe embeddings from a text file.
     
     Args:
         file_path: Path to the GloVe embedding file
-        max_words: Maximum number of words to load (to manage memory)
+        max_words: Maximum number of words to load (to manage memory).
+                   If None, uses GLOVE_MAX_WORDS from environment (default: 400000)
     
     Returns:
         Dictionary with word as key and embedding vector as value
     """
+    if max_words is None:
+        max_words = GLOVE_MAX_WORDS
+    
     embeddings_dict = {}
     word_count = 0
     
