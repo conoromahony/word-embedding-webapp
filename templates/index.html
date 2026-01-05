@@ -376,10 +376,17 @@
             data.similar_words.forEach(([word, score]) => {
                 const wordItem = document.createElement('div');
                 wordItem.className = 'word-item';
-                wordItem.innerHTML = `
-                    <span class="word-name">${word}</span>
-                    <span class="word-score">${score.toFixed(4)}</span>
-                `;
+                
+                const wordName = document.createElement('span');
+                wordName.className = 'word-name';
+                wordName.textContent = word;
+                
+                const wordScore = document.createElement('span');
+                wordScore.className = 'word-score';
+                wordScore.textContent = score.toFixed(4);
+                
+                wordItem.appendChild(wordName);
+                wordItem.appendChild(wordScore);
                 similarWords.appendChild(wordItem);
             });
 

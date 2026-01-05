@@ -42,11 +42,18 @@ def load_glove_embeddings(file_path, max_words=100000):
             for line in f:
                 if word_count >= max_words:
                     break
-                values = line.split()
-                word = values[0]
-                vector = np.asarray(values[1:], dtype='float32')
-                embeddings_dict[word] = vector
-                word_count += 1
+                try:
+                    values = line.split()
+                    if len(values) < 2:
+                        continue  # Skip malformed lines
+                    word = values[0]
+                    vector = np.asarray(values[1:], dtype='float32')
+                    embeddings_dict[word] = vector
+                    word_count += 1
+                except (ValueError, IndexError) as e:
+                    # Skip lines with invalid data
+                    logging.warning(f"Skipping malformed line in GloVe file: {e}")
+                    continue
         
         logging.info(f"Loaded {len(embeddings_dict)} GloVe embeddings")
         return embeddings_dict
@@ -95,6 +102,12 @@ def find_most_similar_glove(word, embeddings_dict, top_n=12):
     """
     Find most similar words using GloVe embeddings.
     
+    Note: This function has O(n) complexity as it computes similarity with all words.
+    For production use with large vocabularies, consider optimizing with:
+    - Pre-computed similarity matrices
+    - Approximate nearest neighbor algorithms (e.g., FAISS, Annoy)
+    - Caching frequently queried words
+    
     Args:
         word: Target word
         embeddings_dict: Dictionary of word embeddings
@@ -140,6 +153,9 @@ def get_embedding():
         - similar_words: List of similar words with scores
     """
     data = request.get_json()
+    if not data:
+        return jsonify({'error': 'Invalid JSON in request body'}), 400
+    
     word_input = data.get('word', '').strip()
     model_type = data.get('model', 'glove')
     
@@ -214,4 +230,9 @@ if __name__ == '__main__':
     # Create embeddings directory if it doesn't exist
     os.makedirs('embeddings', exist_ok=True)
     
-    app.run(debug=True, host='0.0.0.0', port=5000)
+    # Get configuration from environment variables
+    debug_mode = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
+    host = os.environ.get('FLASK_HOST', '127.0.0.1')
+    port = int(os.environ.get('FLASK_PORT', '5000'))
+    
+    app.run(debug=debug_mode, host=host, port=port)

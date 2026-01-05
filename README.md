@@ -77,8 +77,9 @@ Place the `GoogleNews-vectors-negative300.bin` file in the `embeddings/` directo
 
 ## Configuration
 
-You can customize the embedding file paths using environment variables:
+You can customize the application using environment variables:
 
+**Embedding File Paths:**
 ```bash
 export GLOVE_PATH=/path/to/your/glove.6B.50d.txt
 export WORD2VEC_PATH=/path/to/your/GoogleNews-vectors-negative300.bin
@@ -87,6 +88,15 @@ export WORD2VEC_PATH=/path/to/your/GoogleNews-vectors-negative300.bin
 By default, the application looks for:
 - GloVe: `embeddings/glove.6B.50d.txt`
 - Word2Vec: `embeddings/GoogleNews-vectors-negative300.bin`
+
+**Server Configuration:**
+```bash
+export FLASK_DEBUG=true        # Enable debug mode (default: false, NOT recommended for production)
+export FLASK_HOST=0.0.0.0     # Bind to all interfaces (default: 127.0.0.1)
+export FLASK_PORT=8080        # Custom port (default: 5000)
+```
+
+**Security Note:** Never run with `FLASK_DEBUG=true` and `FLASK_HOST=0.0.0.0` in production environments.
 
 ## Running the Application
 
