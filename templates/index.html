@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Embedding Explorer</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .main-content {
+            padding: 40px;
+        }
+
+        .input-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        select, input[type="text"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        select:focus, input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.1em;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            font-weight: 600;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.visible {
+            display: block;
+        }
+
+        .result-card {
+            background: #f8f9fa;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .result-card h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .embedding-vector {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .similar-words {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .word-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #764ba2;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .word-item:hover {
+            transform: translateX(5px);
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .word-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 1.1em;
+        }
+
+        .word-score {
+            color: #667eea;
+            font-weight: 600;
+            font-size: 1em;
+        }
+
+        .error-message {
+            background: #fee;
+            color: #c33;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #c33;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message.visible {
+            display: block;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            display: none;
+        }
+
+        .loading.visible {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 20px;
+        }
+
+        .info-box h3 {
+            color: #1976d2;
+            margin-bottom: 10px;
+        }
+
+        .info-box p {
+            color: #555;
+            line-height: 1.6;
+        }
+
+        .info-box code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🔍 Word Embedding Explorer</h1>
+            <p>Explore word relationships using GloVe and Word2Vec embeddings</p>
+        </header>
+
+        <div class="main-content">
+            <div class="info-box">
+                <h3>📚 How to Use</h3>
+                <p>
+                    Select a pre-trained word embedding model (GloVe or Word2Vec) and enter a word to explore.
+                    The app will display the word's embedding vector and the 12 most similar words based on cosine similarity.
+                </p>
+                <p style="margin-top: 10px;">
+                    <strong>Note:</strong> Make sure to download the embedding files first. See the README for instructions.
+                </p>
+            </div>
+
+            <div class="input-section">
+                <div class="form-group">
+                    <label for="model-select">Select Embedding Model:</label>
+                    <select id="model-select">
+                        <option value="glove">GloVe (6B tokens, 50d)</option>
+                        <option value="word2vec">Word2Vec (Google News, 300d)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="word-input">Enter a Word:</label>
+                    <input type="text" id="word-input" placeholder="e.g., king, computer, happy" />
+                </div>
+
+                <button id="search-btn">Search</button>
+            </div>
+
+            <div class="error-message" id="error-message"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p style="margin-top: 10px; color: #667eea;">Loading embeddings...</p>
+            </div>
+
+            <div class="results-section" id="results-section">
+                <div class="result-card">
+                    <h2>📊 Embedding Vector for "<span id="result-word"></span>"</h2>
+                    <div class="embedding-vector" id="embedding-vector"></div>
+                </div>
+
+                <div class="result-card">
+                    <h2>🔗 Most Similar Words</h2>
+                    <div class="similar-words" id="similar-words"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const modelSelect = document.getElementById('model-select');
+        const wordInput = document.getElementById('word-input');
+        const searchBtn = document.getElementById('search-btn');
+        const errorMessage = document.getElementById('error-message');
+        const loading = document.getElementById('loading');
+        const resultsSection = document.getElementById('results-section');
+        const resultWord = document.getElementById('result-word');
+        const embeddingVector = document.getElementById('embedding-vector');
+        const similarWords = document.getElementById('similar-words');
+
+        // Handle Enter key in input field
+        wordInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                searchBtn.click();
+            }
+        });
+
+        // Search button click handler
+        searchBtn.addEventListener('click', async () => {
+            const word = wordInput.value.trim();
+            const model = modelSelect.value;
+
+            // Validate input
+            if (!word) {
+                showError('Please enter a word');
+                return;
+            }
+
+            // Hide previous results and errors
+            hideError();
+            resultsSection.classList.remove('visible');
+            loading.classList.add('visible');
+            searchBtn.disabled = true;
+
+            try {
+                // Make API request
+                const response = await fetch('/get_embedding', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ word, model }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'An error occurred');
+                }
+
+                // Display results
+                displayResults(data);
+            } catch (error) {
+                showError(error.message);
+            } finally {
+                loading.classList.remove('visible');
+                searchBtn.disabled = false;
+            }
+        });
+
+        function displayResults(data) {
+            // Set the word
+            resultWord.textContent = data.word;
+
+            // Display embedding vector
+            const vectorText = data.embedding
+                .map((val, idx) => `[${idx}]: ${val.toFixed(6)}`)
+                .join('\n');
+            embeddingVector.textContent = vectorText;
+
+            // Display similar words
+            similarWords.innerHTML = '';
+            data.similar_words.forEach(([word, score]) => {
+                const wordItem = document.createElement('div');
+                wordItem.className = 'word-item';
+                wordItem.innerHTML = `
+                    <span class="word-name">${word}</span>
+                    <span class="word-score">${score.toFixed(4)}</span>
+                `;
+                similarWords.appendChild(wordItem);
+            });
+
+            // Show results
+            resultsSection.classList.add('visible');
+        }
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('visible');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('visible');
+        }
+    </script>
+</body>
+</html>
