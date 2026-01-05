@@ -12,6 +12,10 @@ import logging
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
 
+# Configuration for embedding file paths
+GLOVE_PATH = os.environ.get('GLOVE_PATH', 'embeddings/glove.6B.50d.txt')
+WORD2VEC_PATH = os.environ.get('WORD2VEC_PATH', 'embeddings/GoogleNews-vectors-negative300.bin')
+
 # Global variables to store loaded embeddings
 embeddings = {
     'glove': None,
@@ -136,29 +140,35 @@ def get_embedding():
         - similar_words: List of similar words with scores
     """
     data = request.get_json()
-    word = data.get('word', '').lower().strip()
+    word_input = data.get('word', '').strip()
     model_type = data.get('model', 'glove')
     
-    if not word:
+    if not word_input:
         return jsonify({'error': 'Please provide a word'}), 400
+    
+    # Handle case sensitivity based on model type
+    # GloVe embeddings are typically lowercase
+    # Word2Vec may preserve case for proper nouns
+    if model_type == 'glove':
+        word = word_input.lower()
+    else:
+        word = word_input
     
     # Load embeddings if not already loaded
     if model_type == 'glove' and embeddings['glove'] is None:
-        glove_path = 'embeddings/glove.6B.50d.txt'
-        if os.path.exists(glove_path):
-            embeddings['glove'] = load_glove_embeddings(glove_path)
+        if os.path.exists(GLOVE_PATH):
+            embeddings['glove'] = load_glove_embeddings(GLOVE_PATH)
         else:
             return jsonify({
-                'error': 'GloVe embeddings not found. Please download and place them in embeddings/glove.6B.50d.txt'
+                'error': f'GloVe embeddings not found. Please download and place them at {GLOVE_PATH}'
             }), 404
     
     if model_type == 'word2vec' and embeddings['word2vec'] is None:
-        word2vec_path = 'embeddings/GoogleNews-vectors-negative300.bin'
-        if os.path.exists(word2vec_path):
-            embeddings['word2vec'] = load_word2vec_embeddings(word2vec_path)
+        if os.path.exists(WORD2VEC_PATH):
+            embeddings['word2vec'] = load_word2vec_embeddings(WORD2VEC_PATH)
         else:
             return jsonify({
-                'error': 'Word2Vec embeddings not found. Please download and place them in embeddings/GoogleNews-vectors-negative300.bin'
+                'error': f'Word2Vec embeddings not found. Please download and place them at {WORD2VEC_PATH}'
             }), 404
     
     # Process based on model type
@@ -181,7 +191,14 @@ def get_embedding():
             similar = embeddings['word2vec'].most_similar(word, topn=12)
             similar_words = [(w, float(score)) for w, score in similar]
         except KeyError:
-            return jsonify({'error': f'Word "{word}" not found in Word2Vec embeddings'}), 404
+            # Try lowercase as fallback
+            try:
+                word = word.lower()
+                embedding_vector = embeddings['word2vec'][word].tolist()
+                similar = embeddings['word2vec'].most_similar(word, topn=12)
+                similar_words = [(w, float(score)) for w, score in similar]
+            except KeyError:
+                return jsonify({'error': f'Word "{word_input}" not found in Word2Vec embeddings'}), 404
     
     else:
         return jsonify({'error': 'Invalid model type'}), 400

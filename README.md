@@ -55,17 +55,38 @@ You'll need the `glove.6B.50d.txt` file (50-dimensional vectors).
 
 ### Word2Vec Embeddings
 
-1. Download the Google News Word2Vec model:
+1. Download the Google News Word2Vec model from one of these sources:
+
+**Option 1: Using gdown (recommended)**
 ```bash
-# Download from: https://drive.google.com/file/d/0B7XkCwpI5KDYNlNUTTlSS21pQmM/edit
-# Or use gdown (install with: pip install gdown)
+pip install gdown
 cd embeddings
 gdown 0B7XkCwpI5KDYNlNUTTlSS21pQmM
 gunzip GoogleNews-vectors-negative300.bin.gz
 cd ..
 ```
 
+**Option 2: Direct download**
+- Visit the [official Word2Vec page](https://code.google.com/archive/p/word2vec/)
+- Or download from [Kaggle Datasets](https://www.kaggle.com/datasets/leadbest/googlenewsvectorsnegative300)
+- Or use this [alternative mirror](https://github.com/mmihaltz/word2vec-GoogleNews-vectors)
+
+Place the `GoogleNews-vectors-negative300.bin` file in the `embeddings/` directory.
+
 **Note:** The Word2Vec file is approximately 1.5 GB, so the download may take some time.
+
+## Configuration
+
+You can customize the embedding file paths using environment variables:
+
+```bash
+export GLOVE_PATH=/path/to/your/glove.6B.50d.txt
+export WORD2VEC_PATH=/path/to/your/GoogleNews-vectors-negative300.bin
+```
+
+By default, the application looks for:
+- GloVe: `embeddings/glove.6B.50d.txt`
+- Word2Vec: `embeddings/GoogleNews-vectors-negative300.bin`
 
 ## Running the Application
 
