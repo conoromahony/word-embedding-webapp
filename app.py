@@ -14,13 +14,17 @@ logging.basicConfig(level=logging.INFO)
 
 # Configuration for embedding file paths
 GLOVE_PATH = os.environ.get('GLOVE_PATH', 'embeddings/glove.6B.50d.txt')
-WORD2VEC_PATH = os.environ.get('WORD2VEC_PATH', 'embeddings/GoogleNews-vectors-negative300.bin')
+# ConceptNet Numberbatch: Multi-lingual word embeddings with common sense knowledge
+CONCEPTNET_PATH = os.environ.get('CONCEPTNET_PATH', 'embeddings/numberbatch-en-19.08.txt')
+# Word2Vec-Tiny: Lightweight Word2Vec embeddings for testing and development
+WORD2VEC_TINY_PATH = os.environ.get('WORD2VEC_TINY_PATH', 'embeddings/word2vec-tiny.bin')
 GLOVE_MAX_WORDS = int(os.environ.get('GLOVE_MAX_WORDS', '400000'))
 
 # Global variables to store loaded embeddings
 embeddings = {
     'glove': None,
-    'word2vec': None
+    'conceptnet': None,
+    'word2vec_tiny': None
 }
 
 
@@ -67,22 +71,91 @@ def load_glove_embeddings(file_path, max_words=None):
         return None
 
 
-def load_word2vec_embeddings(file_path):
+def load_conceptnet_embeddings(file_path, max_words=None):
     """
-    Load Word2Vec embeddings using gensim.
+    Load ConceptNet Numberbatch embeddings from a text file.
+    ConceptNet Numberbatch is similar to GloVe in format.
     
     Args:
-        file_path: Path to the Word2Vec binary file
+        file_path: Path to the ConceptNet Numberbatch embedding file
+        max_words: Maximum number of words to load (to manage memory)
+    
+    Returns:
+        Dictionary with word as key and embedding vector as value
+    """
+    if max_words is None:
+        max_words = GLOVE_MAX_WORDS
+    
+    embeddings_dict = {}
+    word_count = 0
+    
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            # Skip the first line if it contains metadata (number of words and dimensions)
+            first_line = f.readline().strip()
+            try:
+                # Try to parse as metadata line (format: "num_words dimensions")
+                parts = first_line.split()
+                if len(parts) == 2 and all(p.isdigit() for p in parts):
+                    # This is a metadata line, skip it
+                    pass
+                else:
+                    # This is a word embedding, process it
+                    values = first_line.split()
+                    if len(values) >= 2:
+                        word = values[0]
+                        # Remove /c/en/ prefix if present (ConceptNet format)
+                        if word.startswith('/c/en/'):
+                            word = word[6:]
+                        vector = np.asarray(values[1:], dtype='float32')
+                        embeddings_dict[word] = vector
+                        word_count += 1
+            except (ValueError, IndexError):
+                pass
+            
+            # Process remaining lines
+            for line in f:
+                if word_count >= max_words:
+                    break
+                try:
+                    values = line.split()
+                    if len(values) < 2:
+                        continue
+                    word = values[0]
+                    # Remove /c/en/ prefix if present (ConceptNet format)
+                    if word.startswith('/c/en/'):
+                        word = word[6:]
+                    vector = np.asarray(values[1:], dtype='float32')
+                    embeddings_dict[word] = vector
+                    word_count += 1
+                except (ValueError, IndexError) as e:
+                    logging.warning(f"Skipping malformed line in ConceptNet file: {e}")
+                    continue
+        
+        logging.info(f"Loaded {len(embeddings_dict)} ConceptNet embeddings")
+        return embeddings_dict
+    except FileNotFoundError:
+        logging.error(f"ConceptNet file not found: {file_path}")
+        return None
+
+
+def load_word2vec_tiny_embeddings(file_path):
+    """
+    Load Word2Vec-Tiny embeddings using gensim.
+    Word2Vec-Tiny is a smaller version of Word2Vec for testing and development.
+    
+    Args:
+        file_path: Path to the Word2Vec-Tiny binary file
     
     Returns:
         KeyedVectors object
     """
     try:
         model = KeyedVectors.load_word2vec_format(file_path, binary=True)
-        logging.info(f"Loaded Word2Vec embeddings: {len(model.index_to_key)} words")
+        logging.info(f"Loaded Word2Vec-Tiny embeddings: {len(model.index_to_key)} words")
         return model
     except FileNotFoundError:
-        logging.error(f"Word2Vec file not found: {file_path}")
+        logging.error(f"Word2Vec-Tiny file not found: {file_path}")
         return None
 
 
@@ -146,88 +219,130 @@ def index():
 @app.route('/get_embedding', methods=['POST'])
 def get_embedding():
     """
-    API endpoint to get word embedding and similar words.
+    API endpoint to get word embeddings and similar words from all supported models.
+    
+    Modified to return results from all three embedding models simultaneously:
+    - GloVe (6B tokens, 50-dimensional)
+    - ConceptNet Numberbatch (300-dimensional)
+    - Word2Vec-Tiny (100-dimensional)
     
     Expects JSON with:
         - word: The word to look up
-        - model: Either 'glove' or 'word2vec'
     
     Returns JSON with:
         - word: The queried word
-        - embedding: The embedding vector
-        - similar_words: List of similar words with scores
+        - results: Dictionary with results from each model (glove, conceptnet, word2vec_tiny)
+          Each result contains:
+            - embedding: The embedding vector
+            - similar_words: List of similar words with scores
+            - error: Error message if the word is not found in that model
     """
     data = request.get_json()
     if not data:
         return jsonify({'error': 'Invalid JSON in request body'}), 400
     
     word_input = data.get('word', '').strip()
-    model_type = data.get('model', 'glove')
     
     if not word_input:
         return jsonify({'error': 'Please provide a word'}), 400
     
-    # Handle case sensitivity based on model type
-    # GloVe embeddings are typically lowercase
-    # Word2Vec may preserve case for proper nouns
-    if model_type == 'glove':
-        word = word_input.lower()
-    else:
-        word = word_input
+    # Dictionary to store results from all models
+    results = {}
     
-    # Load embeddings if not already loaded
-    if model_type == 'glove' and embeddings['glove'] is None:
+    # Process GloVe embeddings
+    word_glove = word_input.lower()  # GloVe embeddings are typically lowercase
+    
+    if embeddings['glove'] is None:
         if os.path.exists(GLOVE_PATH):
             embeddings['glove'] = load_glove_embeddings(GLOVE_PATH)
         else:
-            return jsonify({
-                'error': f'GloVe embeddings not found. Please download and place them at {GLOVE_PATH}'
-            }), 404
+            results['glove'] = {
+                'error': f'GloVe embeddings not found at {GLOVE_PATH}'
+            }
     
-    if model_type == 'word2vec' and embeddings['word2vec'] is None:
-        if os.path.exists(WORD2VEC_PATH):
-            embeddings['word2vec'] = load_word2vec_embeddings(WORD2VEC_PATH)
+    if embeddings['glove'] and embeddings['glove'] is not None:
+        if word_glove in embeddings['glove']:
+            embedding_vector = embeddings['glove'][word_glove].tolist()
+            similar_words = find_most_similar_glove(word_glove, embeddings['glove'])
+            results['glove'] = {
+                'embedding': embedding_vector,
+                'similar_words': similar_words
+            }
         else:
-            return jsonify({
-                'error': f'Word2Vec embeddings not found. Please download and place them at {WORD2VEC_PATH}'
-            }), 404
+            results['glove'] = {
+                'error': f'Word "{word_glove}" not found in GloVe embeddings'
+            }
     
-    # Process based on model type
-    if model_type == 'glove':
-        if embeddings['glove'] is None:
-            return jsonify({'error': 'Failed to load GloVe embeddings'}), 500
-        
-        if word not in embeddings['glove']:
-            return jsonify({'error': f'Word "{word}" not found in GloVe embeddings'}), 404
-        
-        embedding_vector = embeddings['glove'][word].tolist()
-        similar_words = find_most_similar_glove(word, embeddings['glove'])
-        
-    elif model_type == 'word2vec':
-        if embeddings['word2vec'] is None:
-            return jsonify({'error': 'Failed to load Word2Vec embeddings'}), 500
-        
+    # Process ConceptNet Numberbatch embeddings
+    word_conceptnet = word_input.lower()  # ConceptNet embeddings are typically lowercase
+    
+    if embeddings['conceptnet'] is None:
+        if os.path.exists(CONCEPTNET_PATH):
+            embeddings['conceptnet'] = load_conceptnet_embeddings(CONCEPTNET_PATH)
+        else:
+            results['conceptnet'] = {
+                'error': f'ConceptNet embeddings not found at {CONCEPTNET_PATH}'
+            }
+    
+    if embeddings['conceptnet'] and embeddings['conceptnet'] is not None:
+        if word_conceptnet in embeddings['conceptnet']:
+            embedding_vector = embeddings['conceptnet'][word_conceptnet].tolist()
+            similar_words = find_most_similar_glove(word_conceptnet, embeddings['conceptnet'])
+            results['conceptnet'] = {
+                'embedding': embedding_vector,
+                'similar_words': similar_words
+            }
+        else:
+            results['conceptnet'] = {
+                'error': f'Word "{word_conceptnet}" not found in ConceptNet embeddings'
+            }
+    
+    # Process Word2Vec-Tiny embeddings
+    word_w2v = word_input
+    
+    if embeddings['word2vec_tiny'] is None:
+        if os.path.exists(WORD2VEC_TINY_PATH):
+            embeddings['word2vec_tiny'] = load_word2vec_tiny_embeddings(WORD2VEC_TINY_PATH)
+        else:
+            results['word2vec_tiny'] = {
+                'error': f'Word2Vec-Tiny embeddings not found at {WORD2VEC_TINY_PATH}'
+            }
+    
+    if embeddings['word2vec_tiny'] and embeddings['word2vec_tiny'] is not None:
         try:
-            embedding_vector = embeddings['word2vec'][word].tolist()
-            similar = embeddings['word2vec'].most_similar(word, topn=12)
+            embedding_vector = embeddings['word2vec_tiny'][word_w2v].tolist()
+            similar = embeddings['word2vec_tiny'].most_similar(word_w2v, topn=12)
             similar_words = [(w, float(score)) for w, score in similar]
+            results['word2vec_tiny'] = {
+                'embedding': embedding_vector,
+                'similar_words': similar_words
+            }
         except KeyError:
             # Try lowercase as fallback
             try:
-                word = word.lower()
-                embedding_vector = embeddings['word2vec'][word].tolist()
-                similar = embeddings['word2vec'].most_similar(word, topn=12)
+                word_w2v = word_input.lower()
+                embedding_vector = embeddings['word2vec_tiny'][word_w2v].tolist()
+                similar = embeddings['word2vec_tiny'].most_similar(word_w2v, topn=12)
                 similar_words = [(w, float(score)) for w, score in similar]
+                results['word2vec_tiny'] = {
+                    'embedding': embedding_vector,
+                    'similar_words': similar_words
+                }
             except KeyError:
-                return jsonify({'error': f'Word "{word_input}" not found in Word2Vec embeddings'}), 404
+                results['word2vec_tiny'] = {
+                    'error': f'Word "{word_input}" not found in Word2Vec-Tiny embeddings'
+                }
     
-    else:
-        return jsonify({'error': 'Invalid model type'}), 400
+    # Return error if no results from any model
+    if all('error' in result for result in results.values()):
+        return jsonify({
+            'error': 'Word not found in any embedding model',
+            'results': results
+        }), 404
     
     return jsonify({
-        'word': word,
-        'embedding': embedding_vector,
-        'similar_words': similar_words
+        'word': word_input,
+        'results': results
     })
 
 

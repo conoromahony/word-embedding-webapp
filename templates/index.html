@@ -129,6 +129,52 @@
             font-size: 1.5em;
         }
 
+        /* Table layout for displaying results from multiple models */
+        .results-table {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .model-column {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .model-header {
+            font-weight: 700;
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 6px;
+            text-align: center;
+            color: white;
+        }
+
+        .model-header.glove {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .model-header.conceptnet {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+
+        .model-header.word2vec-tiny {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+
+        .model-error {
+            color: #c33;
+            font-style: italic;
+            padding: 10px;
+            background: #fee;
+            border-radius: 6px;
+            text-align: center;
+        }
+
         .embedding-vector {
             background: white;
             padding: 15px;
@@ -143,17 +189,14 @@
         }
 
         .similar-words {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
             margin-top: 15px;
         }
 
         .word-item {
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            border-left: 4px solid #764ba2;
+            background: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 6px;
+            margin-bottom: 8px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -168,13 +211,23 @@
         .word-name {
             font-weight: 600;
             color: #333;
-            font-size: 1.1em;
+            font-size: 0.95em;
         }
 
         .word-score {
             color: #667eea;
             font-weight: 600;
-            font-size: 1em;
+            font-size: 0.9em;
+        }
+
+        .section-title {
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #666;
+            margin-top: 15px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .error-message {
@@ -247,30 +300,27 @@
     <div class="container">
         <header>
             <h1>🔍 Word Embedding Explorer</h1>
-            <p>Explore word relationships using GloVe and Word2Vec embeddings</p>
+            <p>Compare word relationships across GloVe, ConceptNet, and Word2Vec embeddings</p>
         </header>
 
         <div class="main-content">
             <div class="info-box">
                 <h3>📚 How to Use</h3>
                 <p>
-                    Select a pre-trained word embedding model (GloVe or Word2Vec) and enter a word to explore.
-                    The app will display the word's embedding vector and the 12 most similar words based on cosine similarity.
+                    Enter a word to explore its embeddings across three different models.
+                    The app will display the word's embedding vector and the 12 most similar words based on cosine similarity for each model:
                 </p>
+                <ul style="margin-top: 10px; margin-left: 20px; line-height: 1.8;">
+                    <li><strong>GloVe</strong> - Pre-trained on 6 billion tokens with 50-dimensional vectors</li>
+                    <li><strong>ConceptNet Numberbatch</strong> - Multi-lingual embeddings with common sense knowledge (300-dimensional)</li>
+                    <li><strong>Word2Vec-Tiny</strong> - Lightweight Word2Vec embeddings (100-dimensional)</li>
+                </ul>
                 <p style="margin-top: 10px;">
                     <strong>Note:</strong> Make sure to download the embedding files first. See the README for instructions.
                 </p>
             </div>
 
             <div class="input-section">
-                <div class="form-group">
-                    <label for="model-select">Select Embedding Model:</label>
-                    <select id="model-select">
-                        <option value="glove">GloVe (6B tokens, 50d)</option>
-                        <option value="word2vec">Word2Vec (Google News, 300d)</option>
-                    </select>
-                </div>
-
                 <div class="form-group">
                     <label for="word-input">Enter a Word:</label>
                     <input type="text" id="word-input" placeholder="e.g., king, computer, happy" />
@@ -287,29 +337,31 @@
             </div>
 
             <div class="results-section" id="results-section">
+                <!-- Most Similar Words section displayed first (above Embedding Vector) -->
                 <div class="result-card">
-                    <h2>📊 Embedding Vector for "<span id="result-word"></span>"</h2>
-                    <div class="embedding-vector" id="embedding-vector"></div>
+                    <h2>🔗 Most Similar Words for "<span id="result-word-similar"></span>"</h2>
+                    <div class="results-table" id="similar-words-table"></div>
                 </div>
 
+                <!-- Embedding Vector section displayed second (below Most Similar Words) -->
                 <div class="result-card">
-                    <h2>🔗 Most Similar Words</h2>
-                    <div class="similar-words" id="similar-words"></div>
+                    <h2>📊 Embedding Vector for "<span id="result-word-vector"></span>"</h2>
+                    <div class="results-table" id="embedding-vector-table"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        const modelSelect = document.getElementById('model-select');
         const wordInput = document.getElementById('word-input');
         const searchBtn = document.getElementById('search-btn');
         const errorMessage = document.getElementById('error-message');
         const loading = document.getElementById('loading');
         const resultsSection = document.getElementById('results-section');
-        const resultWord = document.getElementById('result-word');
-        const embeddingVector = document.getElementById('embedding-vector');
-        const similarWords = document.getElementById('similar-words');
+        const resultWordSimilar = document.getElementById('result-word-similar');
+        const resultWordVector = document.getElementById('result-word-vector');
+        const similarWordsTable = document.getElementById('similar-words-table');
+        const embeddingVectorTable = document.getElementById('embedding-vector-table');
 
         // Handle Enter key in input field
         wordInput.addEventListener('keypress', (e) => {
@@ -321,7 +373,6 @@
         // Search button click handler
         searchBtn.addEventListener('click', async () => {
             const word = wordInput.value.trim();
-            const model = modelSelect.value;
 
             // Validate input
             if (!word) {
@@ -336,13 +387,13 @@
             searchBtn.disabled = true;
 
             try {
-                // Make API request
+                // Make API request - no longer sending model parameter
                 const response = await fetch('/get_embedding', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ word, model }),
+                    body: JSON.stringify({ word }),
                 });
 
                 const data = await response.json();
@@ -362,32 +413,105 @@
         });
 
         function displayResults(data) {
-            // Set the word
-            resultWord.textContent = data.word;
+            // Set the word in both sections
+            resultWordSimilar.textContent = data.word;
+            resultWordVector.textContent = data.word;
 
-            // Display embedding vector
-            const vectorText = data.embedding
-                .map((val, idx) => `[${idx}]: ${val.toFixed(6)}`)
-                .join('\n');
-            embeddingVector.textContent = vectorText;
+            // Clear previous results
+            similarWordsTable.innerHTML = '';
+            embeddingVectorTable.innerHTML = '';
 
-            // Display similar words
-            similarWords.innerHTML = '';
-            data.similar_words.forEach(([word, score]) => {
-                const wordItem = document.createElement('div');
-                wordItem.className = 'word-item';
+            const models = [
+                { key: 'glove', name: 'GloVe', class: 'glove' },
+                { key: 'conceptnet', name: 'ConceptNet Numberbatch', class: 'conceptnet' },
+                { key: 'word2vec_tiny', name: 'Word2Vec-Tiny', class: 'word2vec-tiny' }
+            ];
+
+            // Display Most Similar Words for each model
+            models.forEach(model => {
+                const column = document.createElement('div');
+                column.className = 'model-column';
+
+                const header = document.createElement('div');
+                header.className = `model-header ${model.class}`;
+                header.textContent = model.name;
+                column.appendChild(header);
+
+                const result = data.results[model.key];
                 
-                const wordName = document.createElement('span');
-                wordName.className = 'word-name';
-                wordName.textContent = word;
+                if (result && result.error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'model-error';
+                    errorDiv.textContent = result.error;
+                    column.appendChild(errorDiv);
+                } else if (result && result.similar_words) {
+                    const sectionTitle = document.createElement('div');
+                    sectionTitle.className = 'section-title';
+                    sectionTitle.textContent = 'Similar Words';
+                    column.appendChild(sectionTitle);
+
+                    const wordsContainer = document.createElement('div');
+                    wordsContainer.className = 'similar-words';
+                    
+                    result.similar_words.forEach(([word, score]) => {
+                        const wordItem = document.createElement('div');
+                        wordItem.className = 'word-item';
+                        
+                        const wordName = document.createElement('span');
+                        wordName.className = 'word-name';
+                        wordName.textContent = word;
+                        
+                        const wordScore = document.createElement('span');
+                        wordScore.className = 'word-score';
+                        wordScore.textContent = score.toFixed(4);
+                        
+                        wordItem.appendChild(wordName);
+                        wordItem.appendChild(wordScore);
+                        wordsContainer.appendChild(wordItem);
+                    });
+                    
+                    column.appendChild(wordsContainer);
+                }
+
+                similarWordsTable.appendChild(column);
+            });
+
+            // Display Embedding Vectors for each model
+            models.forEach(model => {
+                const column = document.createElement('div');
+                column.className = 'model-column';
+
+                const header = document.createElement('div');
+                header.className = `model-header ${model.class}`;
+                header.textContent = model.name;
+                column.appendChild(header);
+
+                const result = data.results[model.key];
                 
-                const wordScore = document.createElement('span');
-                wordScore.className = 'word-score';
-                wordScore.textContent = score.toFixed(4);
-                
-                wordItem.appendChild(wordName);
-                wordItem.appendChild(wordScore);
-                similarWords.appendChild(wordItem);
+                if (result && result.error) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.className = 'model-error';
+                    errorDiv.textContent = result.error;
+                    column.appendChild(errorDiv);
+                } else if (result && result.embedding) {
+                    const sectionTitle = document.createElement('div');
+                    sectionTitle.className = 'section-title';
+                    sectionTitle.textContent = 'Embedding Vector';
+                    column.appendChild(sectionTitle);
+
+                    const vectorDiv = document.createElement('div');
+                    vectorDiv.className = 'embedding-vector';
+                    
+                    const vectorText = result.embedding
+                        .slice(0, 20)  // Show first 20 dimensions
+                        .map((val, idx) => `[${idx}]: ${val.toFixed(6)}`)
+                        .join('\n');
+                    vectorDiv.textContent = vectorText + '\n... (' + result.embedding.length + ' dimensions total)';
+                    
+                    column.appendChild(vectorDiv);
+                }
+
+                embeddingVectorTable.appendChild(column);
             });
 
             // Show results
