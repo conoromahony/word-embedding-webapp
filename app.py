@@ -110,8 +110,11 @@ def load_conceptnet_embeddings(file_path, max_words=None):
             first_line = f.readline().strip()
             parts = first_line.split()
             
-            # Check if first line is metadata (two integers)
-            is_metadata = len(parts) == 2 and all(p.isdigit() for p in parts)
+            # Check if first line is metadata (two integers or numbers)
+            try:
+                is_metadata = len(parts) == 2 and all(p.lstrip('-').isdigit() for p in parts)
+            except:
+                is_metadata = False
             
             if not is_metadata:
                 # First line is a word embedding, process it
@@ -341,8 +344,8 @@ def get_embedding():
                     'error': f'Word "{word_input}" not found in Word2Vec-Tiny embeddings'
                 }
     
-    # Return error if no results from any model
-    if all('error' in result for result in results.values()):
+    # Return error if no results from any model or results is empty
+    if not results or all('error' in result for result in results.values()):
         return jsonify({
             'error': 'Word not found in any embedding model',
             'results': results
