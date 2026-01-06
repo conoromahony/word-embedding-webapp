@@ -158,12 +158,12 @@
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         }
 
-        .model-header.conceptnet {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        .model-header.word2vec-10k-public {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
         }
 
-        .model-header.word2vec-tiny {
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        .model-header.custom {
+            background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
         }
 
         .model-error {
@@ -300,20 +300,20 @@
     <div class="container">
         <header>
             <h1>🔍 Word Embedding Explorer</h1>
-            <p>Compare word relationships across GloVe, ConceptNet, and Word2Vec embeddings</p>
+            <p>Compare word relationships across GloVe and Word2Vec embeddings</p>
         </header>
 
         <div class="main-content">
             <div class="info-box">
                 <h3>📚 How to Use</h3>
                 <p>
-                    Enter a word to explore its embeddings across three different models.
+                    Enter a word to explore its embeddings across multiple models.
                     The app will display the word's embedding vector and the 12 most similar words based on cosine similarity for each model:
                 </p>
                 <ul style="margin-top: 10px; margin-left: 20px; line-height: 1.8;">
                     <li><strong>GloVe</strong> - Pre-trained on 6 billion tokens with 50-dimensional vectors</li>
-                    <li><strong>ConceptNet Numberbatch</strong> - Multi-lingual embeddings with common sense knowledge (300-dimensional)</li>
-                    <li><strong>Word2Vec-Tiny</strong> - Lightweight Word2Vec embeddings (100-dimensional)</li>
+                    <li><strong>Word2Vec-10k-Public</strong> - Word2Vec embeddings with 10k vocabulary (100-dimensional)</li>
+                    <li><strong>Custom Word Embeddings</strong> - Placeholder for future custom embeddings (not yet implemented)</li>
                 </ul>
                 <p style="margin-top: 10px;">
                     <strong>Note:</strong> Make sure to download the embedding files first. See the README for instructions.
@@ -496,8 +496,8 @@
 
             const models = [
                 { key: 'glove', name: 'GloVe', class: 'glove' },
-                { key: 'conceptnet', name: 'ConceptNet Numberbatch', class: 'conceptnet' },
-                { key: 'word2vec_tiny', name: 'Word2Vec-Tiny', class: 'word2vec-tiny' }
+                { key: 'word2vec_10k_public', name: 'Word2Vec-10k-Public', class: 'word2vec-10k-public' },
+                { key: 'custom', name: 'Custom Word Embeddings', class: 'custom' }
             ];
 
             // Display Most Similar Words for each model

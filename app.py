@@ -1,6 +1,6 @@
 """
 Flask application for word embedding visualization.
-Allows users to explore and compare GloVe, ConceptNet Numberbatch, and Word2Vec-Tiny embeddings.
+Allows users to explore and compare GloVe and Word2Vec-10k-Public embeddings.
 """
 
 import os
@@ -14,17 +14,17 @@ logging.basicConfig(level=logging.INFO)
 
 # Configuration for embedding file paths
 GLOVE_PATH = 'embeddings/glove.6B.50d.txt'
-# ConceptNet Numberbatch: Multi-lingual word embeddings with common sense knowledge
-CONCEPTNET_PATH = 'embeddings/numberbatch-en-19.08.txt'
-# Word2Vec-Tiny: Lightweight Word2Vec embeddings for testing and development
-WORD2VEC_TINY_PATH = 'embeddings/word2vec-10k-public.bin'
+# Word2Vec-10k-Public: Word2Vec embeddings with 10k vocabulary for public use
+WORD2VEC_10K_PUBLIC_PATH = 'embeddings/word2vec-10k-public.bin'
+# Custom Word Embeddings: Placeholder for future custom embeddings (not yet implemented)
+CUSTOM_EMBEDDINGS_PATH = 'embeddings/custom-embeddings.bin'
 GLOVE_MAX_WORDS = int(os.environ.get('GLOVE_MAX_WORDS', '40000'))
 
 # Global variables to store loaded embeddings
 embeddings = {
     'glove': None,
-    'conceptnet': None,
-    'word2vec_tiny': None
+    'word2vec_10k_public': None,
+    'custom': None  # Placeholder for future implementation
 }
 
 
@@ -71,107 +71,40 @@ def load_glove_embeddings(file_path, max_words=None):
         return None
 
 
-def normalize_conceptnet_word(word):
+def load_word2vec_10k_public_embeddings(file_path):
     """
-    Normalize ConceptNet word by removing the /c/en/ prefix if present.
+    Load Word2Vec-10k-Public embeddings using gensim.
+    Word2Vec-10k-Public is a Word2Vec model with 10k vocabulary for public use.
     
     Args:
-        word: Word string, possibly with ConceptNet prefix
-    
-    Returns:
-        Normalized word without prefix
-    """
-    if word.startswith('/c/en/'):
-        return word[6:]
-    return word
-
-
-def load_conceptnet_embeddings(file_path, max_words=None):
-    """
-    Load ConceptNet Numberbatch embeddings from a text file.
-    ConceptNet Numberbatch is similar to GloVe in format.
-    
-    Args:
-        file_path: Path to the ConceptNet Numberbatch embedding file
-        max_words: Maximum number of words to load (to manage memory)
-    
-    Returns:
-        Dictionary with word as key and embedding vector as value
-    """
-    if max_words is None:
-        max_words = GLOVE_MAX_WORDS
-    
-    embeddings_dict = {}
-    word_count = 0
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as f:
-            # Skip the first line if it contains metadata (format: "num_words dimensions")
-            first_line = f.readline().strip()
-            parts = first_line.split()
-            
-            # Check if first line is metadata (two numbers: vocab_size dimensions)
-            is_metadata = False
-            if len(parts) == 2:
-                try:
-                    int(parts[0])  # vocab size should be an integer
-                    int(parts[1])  # dimensions should be an integer
-                    is_metadata = True
-                except ValueError:
-                    pass
-            
-            if not is_metadata:
-                # First line is a word embedding, process it
-                try:
-                    if len(parts) >= 2:
-                        word = normalize_conceptnet_word(parts[0])
-                        vector = np.asarray(parts[1:], dtype='float32')
-                        embeddings_dict[word] = vector
-                        word_count += 1
-                except (ValueError, IndexError):
-                    pass
-            
-            # Process remaining lines
-            for line in f:
-                if word_count >= max_words:
-                    break
-                try:
-                    values = line.split()
-                    if len(values) < 2:
-                        continue
-                    word = normalize_conceptnet_word(values[0])
-                    vector = np.asarray(values[1:], dtype='float32')
-                    embeddings_dict[word] = vector
-                    word_count += 1
-                except (ValueError, IndexError) as e:
-                    logging.warning(f"Skipping malformed line in ConceptNet file: {e}")
-                    continue
-        
-        logging.info(f"Loaded {len(embeddings_dict)} ConceptNet embeddings")
-        return embeddings_dict
-    except FileNotFoundError:
-        logging.error(f"ConceptNet file not found: {file_path}")
-        return None
-
-
-def load_word2vec_tiny_embeddings(file_path):
-    """
-    Load Word2Vec-Tiny embeddings using gensim.
-    Word2Vec-Tiny is a smaller version of Word2Vec for testing and development.
-    
-    Args:
-        file_path: Path to the Word2Vec-Tiny binary file
+        file_path: Path to the Word2Vec-10k-Public binary file
     
     Returns:
         KeyedVectors object
     """
     try:
         model = KeyedVectors.load_word2vec_format(file_path, binary=True)
-        logging.info(f"Loaded Word2Vec-Tiny embeddings: {len(model.index_to_key)} words")
+        logging.info(f"Loaded Word2Vec-10k-Public embeddings: {len(model.index_to_key)} words")
         return model
     except FileNotFoundError:
-        logging.error(f"Word2Vec-Tiny file not found: {file_path}")
+        logging.error(f"Word2Vec-10k-Public file not found: {file_path}")
         return None
+
+
+def load_custom_embeddings(file_path):
+    """
+    Placeholder function for loading custom word embeddings.
+    This function is not yet implemented and is reserved for future development.
+    
+    Args:
+        file_path: Path to the custom embeddings file
+    
+    Returns:
+        None (not yet implemented)
+    """
+    # TODO: Implement custom embeddings loading logic
+    logging.info("Custom embeddings feature is not yet implemented")
+    return None
 
 
 def cosine_similarity(vec1, vec2):
@@ -236,17 +169,17 @@ def get_embedding():
     """
     API endpoint to get word embeddings and similar words from all supported models.
     
-    Modified to return results from all three embedding models simultaneously:
+    Modified to return results from multiple embedding models simultaneously:
     - GloVe (6B tokens, 50-dimensional)
-    - ConceptNet Numberbatch (300-dimensional)
-    - Word2Vec-Tiny (100-dimensional)
+    - Word2Vec-10k-Public (100-dimensional)
+    - Custom Word Embeddings (placeholder for future implementation)
     
     Expects JSON with:
         - word: The word to look up
     
     Returns JSON with:
         - word: The queried word
-        - results: Dictionary with results from each model (glove, conceptnet, word2vec_tiny)
+        - results: Dictionary with results from each model (glove, word2vec_10k_public, custom)
           Each result contains:
             - embedding: The embedding vector
             - similar_words: List of similar words with scores
@@ -288,47 +221,23 @@ def get_embedding():
                 'error': f'Word "{word_glove}" not found in GloVe embeddings'
             }
     
-    # Process ConceptNet Numberbatch embeddings
-    word_conceptnet = word_input.lower()  # ConceptNet embeddings are typically lowercase
-    
-    if embeddings['conceptnet'] is None:
-        if os.path.exists(CONCEPTNET_PATH):
-            embeddings['conceptnet'] = load_conceptnet_embeddings(CONCEPTNET_PATH)
-        else:
-            results['conceptnet'] = {
-                'error': f'ConceptNet embeddings not found at {CONCEPTNET_PATH}'
-            }
-    
-    if embeddings['conceptnet'] is not None:
-        if word_conceptnet in embeddings['conceptnet']:
-            embedding_vector = embeddings['conceptnet'][word_conceptnet].tolist()
-            similar_words = find_most_similar_glove(word_conceptnet, embeddings['conceptnet'])
-            results['conceptnet'] = {
-                'embedding': embedding_vector,
-                'similar_words': similar_words
-            }
-        else:
-            results['conceptnet'] = {
-                'error': f'Word "{word_conceptnet}" not found in ConceptNet embeddings'
-            }
-    
-    # Process Word2Vec-Tiny embeddings
+    # Process Word2Vec-10k-Public embeddings
     word_w2v = word_input
     
-    if embeddings['word2vec_tiny'] is None:
-        if os.path.exists(WORD2VEC_TINY_PATH):
-            embeddings['word2vec_tiny'] = load_word2vec_tiny_embeddings(WORD2VEC_TINY_PATH)
+    if embeddings['word2vec_10k_public'] is None:
+        if os.path.exists(WORD2VEC_10K_PUBLIC_PATH):
+            embeddings['word2vec_10k_public'] = load_word2vec_10k_public_embeddings(WORD2VEC_10K_PUBLIC_PATH)
         else:
-            results['word2vec_tiny'] = {
-                'error': f'Word2Vec-Tiny embeddings not found at {WORD2VEC_TINY_PATH}'
+            results['word2vec_10k_public'] = {
+                'error': f'Word2Vec-10k-Public embeddings not found at {WORD2VEC_10K_PUBLIC_PATH}'
             }
     
-    if embeddings['word2vec_tiny'] is not None:
+    if embeddings['word2vec_10k_public'] is not None:
         try:
-            embedding_vector = embeddings['word2vec_tiny'][word_w2v].tolist()
-            similar = embeddings['word2vec_tiny'].most_similar(word_w2v, topn=12)
+            embedding_vector = embeddings['word2vec_10k_public'][word_w2v].tolist()
+            similar = embeddings['word2vec_10k_public'].most_similar(word_w2v, topn=12)
             similar_words = [(w, float(score)) for w, score in similar]
-            results['word2vec_tiny'] = {
+            results['word2vec_10k_public'] = {
                 'embedding': embedding_vector,
                 'similar_words': similar_words
             }
@@ -336,17 +245,24 @@ def get_embedding():
             # Try lowercase as fallback
             try:
                 word_w2v = word_input.lower()
-                embedding_vector = embeddings['word2vec_tiny'][word_w2v].tolist()
-                similar = embeddings['word2vec_tiny'].most_similar(word_w2v, topn=12)
+                embedding_vector = embeddings['word2vec_10k_public'][word_w2v].tolist()
+                similar = embeddings['word2vec_10k_public'].most_similar(word_w2v, topn=12)
                 similar_words = [(w, float(score)) for w, score in similar]
-                results['word2vec_tiny'] = {
+                results['word2vec_10k_public'] = {
                     'embedding': embedding_vector,
                     'similar_words': similar_words
                 }
             except KeyError:
-                results['word2vec_tiny'] = {
-                    'error': f'Word "{word_input}" not found in Word2Vec-Tiny embeddings'
+                results['word2vec_10k_public'] = {
+                    'error': f'Word "{word_input}" not found in Word2Vec-10k-Public embeddings'
                 }
+    
+    # Process Custom embeddings (placeholder - not yet implemented)
+    if embeddings['custom'] is None:
+        # Placeholder: Always show a message that custom embeddings are not yet implemented
+        results['custom'] = {
+            'error': 'Custom word embeddings feature is not yet implemented'
+        }
     
     # Return error if no results from any model or results is empty
     if not results or all('error' in result for result in results.values()):
