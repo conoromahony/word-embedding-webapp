@@ -415,6 +415,76 @@
             }
         });
 
+        function createModelColumn(model, result, contentType) {
+            /**
+             * Create a column for a specific model and content type.
+             * 
+             * @param {Object} model - Model configuration with key, name, and class
+             * @param {Object} result - Result data containing embedding or similar_words
+             * @param {string} contentType - Either 'similar_words' or 'embedding'
+             * @returns {HTMLElement} The created column element
+             */
+            const column = document.createElement('div');
+            column.className = 'model-column';
+
+            const header = document.createElement('div');
+            header.className = `model-header ${model.class}`;
+            header.textContent = model.name;
+            column.appendChild(header);
+
+            if (result && result.error) {
+                const errorDiv = document.createElement('div');
+                errorDiv.className = 'model-error';
+                errorDiv.textContent = result.error;
+                column.appendChild(errorDiv);
+            } else if (contentType === 'similar_words' && result && result.similar_words) {
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'section-title';
+                sectionTitle.textContent = 'Similar Words';
+                column.appendChild(sectionTitle);
+
+                const wordsContainer = document.createElement('div');
+                wordsContainer.className = 'similar-words';
+                
+                result.similar_words.forEach(([word, score]) => {
+                    const wordItem = document.createElement('div');
+                    wordItem.className = 'word-item';
+                    
+                    const wordName = document.createElement('span');
+                    wordName.className = 'word-name';
+                    wordName.textContent = word;
+                    
+                    const wordScore = document.createElement('span');
+                    wordScore.className = 'word-score';
+                    wordScore.textContent = score.toFixed(4);
+                    
+                    wordItem.appendChild(wordName);
+                    wordItem.appendChild(wordScore);
+                    wordsContainer.appendChild(wordItem);
+                });
+                
+                column.appendChild(wordsContainer);
+            } else if (contentType === 'embedding' && result && result.embedding) {
+                const sectionTitle = document.createElement('div');
+                sectionTitle.className = 'section-title';
+                sectionTitle.textContent = 'Embedding Vector';
+                column.appendChild(sectionTitle);
+
+                const vectorDiv = document.createElement('div');
+                vectorDiv.className = 'embedding-vector';
+                
+                const vectorText = result.embedding
+                    .slice(0, MAX_DIMENSIONS_TO_DISPLAY)
+                    .map((val, idx) => `[${idx}]: ${val.toFixed(6)}`)
+                    .join('\n');
+                vectorDiv.textContent = vectorText + '\n... (' + result.embedding.length + ' dimensions total)';
+                
+                column.appendChild(vectorDiv);
+            }
+
+            return column;
+        }
+
         function displayResults(data) {
             // Set the word in both sections
             resultWordSimilar.textContent = data.word;
@@ -432,88 +502,15 @@
 
             // Display Most Similar Words for each model
             models.forEach(model => {
-                const column = document.createElement('div');
-                column.className = 'model-column';
-
-                const header = document.createElement('div');
-                header.className = `model-header ${model.class}`;
-                header.textContent = model.name;
-                column.appendChild(header);
-
                 const result = data.results[model.key];
-                
-                if (result && result.error) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'model-error';
-                    errorDiv.textContent = result.error;
-                    column.appendChild(errorDiv);
-                } else if (result && result.similar_words) {
-                    const sectionTitle = document.createElement('div');
-                    sectionTitle.className = 'section-title';
-                    sectionTitle.textContent = 'Similar Words';
-                    column.appendChild(sectionTitle);
-
-                    const wordsContainer = document.createElement('div');
-                    wordsContainer.className = 'similar-words';
-                    
-                    result.similar_words.forEach(([word, score]) => {
-                        const wordItem = document.createElement('div');
-                        wordItem.className = 'word-item';
-                        
-                        const wordName = document.createElement('span');
-                        wordName.className = 'word-name';
-                        wordName.textContent = word;
-                        
-                        const wordScore = document.createElement('span');
-                        wordScore.className = 'word-score';
-                        wordScore.textContent = score.toFixed(4);
-                        
-                        wordItem.appendChild(wordName);
-                        wordItem.appendChild(wordScore);
-                        wordsContainer.appendChild(wordItem);
-                    });
-                    
-                    column.appendChild(wordsContainer);
-                }
-
+                const column = createModelColumn(model, result, 'similar_words');
                 similarWordsTable.appendChild(column);
             });
 
             // Display Embedding Vectors for each model
             models.forEach(model => {
-                const column = document.createElement('div');
-                column.className = 'model-column';
-
-                const header = document.createElement('div');
-                header.className = `model-header ${model.class}`;
-                header.textContent = model.name;
-                column.appendChild(header);
-
                 const result = data.results[model.key];
-                
-                if (result && result.error) {
-                    const errorDiv = document.createElement('div');
-                    errorDiv.className = 'model-error';
-                    errorDiv.textContent = result.error;
-                    column.appendChild(errorDiv);
-                } else if (result && result.embedding) {
-                    const sectionTitle = document.createElement('div');
-                    sectionTitle.className = 'section-title';
-                    sectionTitle.textContent = 'Embedding Vector';
-                    column.appendChild(sectionTitle);
-
-                    const vectorDiv = document.createElement('div');
-                    vectorDiv.className = 'embedding-vector';
-                    
-                    const vectorText = result.embedding
-                        .slice(0, MAX_DIMENSIONS_TO_DISPLAY)
-                        .map((val, idx) => `[${idx}]: ${val.toFixed(6)}`)
-                        .join('\n');
-                    vectorDiv.textContent = vectorText + '\n... (' + result.embedding.length + ' dimensions total)';
-                    
-                    column.appendChild(vectorDiv);
-                }
-
+                const column = createModelColumn(model, result, 'embedding');
                 embeddingVectorTable.appendChild(column);
             });
 

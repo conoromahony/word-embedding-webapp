@@ -1,6 +1,6 @@
 """
 Flask application for word embedding visualization.
-Allows users to explore GloVe and Word2Vec embeddings.
+Allows users to explore and compare GloVe, ConceptNet Numberbatch, and Word2Vec-Tiny embeddings.
 """
 
 import os
@@ -71,6 +71,21 @@ def load_glove_embeddings(file_path, max_words=None):
         return None
 
 
+def normalize_conceptnet_word(word):
+    """
+    Normalize ConceptNet word by removing the /c/en/ prefix if present.
+    
+    Args:
+        word: Word string, possibly with ConceptNet prefix
+    
+    Returns:
+        Normalized word without prefix
+    """
+    if word.startswith('/c/en/'):
+        return word[6:]
+    return word
+
+
 def load_conceptnet_embeddings(file_path, max_words=None):
     """
     Load ConceptNet Numberbatch embeddings from a text file.
@@ -91,27 +106,23 @@ def load_conceptnet_embeddings(file_path, max_words=None):
     
     try:
         with open(file_path, 'r', encoding='utf-8') as f:
-            # Skip the first line if it contains metadata (number of words and dimensions)
+            # Skip the first line if it contains metadata (format: "num_words dimensions")
             first_line = f.readline().strip()
-            try:
-                # Try to parse as metadata line (format: "num_words dimensions")
-                parts = first_line.split()
-                if len(parts) == 2 and all(p.isdigit() for p in parts):
-                    # This is a metadata line, skip it
-                    pass
-                else:
-                    # This is a word embedding, process it
-                    values = first_line.split()
-                    if len(values) >= 2:
-                        word = values[0]
-                        # Remove /c/en/ prefix if present (ConceptNet format)
-                        if word.startswith('/c/en/'):
-                            word = word[6:]
-                        vector = np.asarray(values[1:], dtype='float32')
+            parts = first_line.split()
+            
+            # Check if first line is metadata (two integers)
+            is_metadata = len(parts) == 2 and all(p.isdigit() for p in parts)
+            
+            if not is_metadata:
+                # First line is a word embedding, process it
+                try:
+                    if len(parts) >= 2:
+                        word = normalize_conceptnet_word(parts[0])
+                        vector = np.asarray(parts[1:], dtype='float32')
                         embeddings_dict[word] = vector
                         word_count += 1
-            except (ValueError, IndexError):
-                pass
+                except (ValueError, IndexError):
+                    pass
             
             # Process remaining lines
             for line in f:
@@ -121,10 +132,7 @@ def load_conceptnet_embeddings(file_path, max_words=None):
                     values = line.split()
                     if len(values) < 2:
                         continue
-                    word = values[0]
-                    # Remove /c/en/ prefix if present (ConceptNet format)
-                    if word.startswith('/c/en/'):
-                        word = word[6:]
+                    word = normalize_conceptnet_word(values[0])
                     vector = np.asarray(values[1:], dtype='float32')
                     embeddings_dict[word] = vector
                     word_count += 1
