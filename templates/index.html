@@ -300,7 +300,6 @@
     <div class="container">
         <header>
             <h1>🔍 Word Embedding Explorer</h1>
-            <p>Compare word relationships across GloVe and Word2Vec embeddings</p>
         </header>
 
         <div class="main-content">
@@ -315,9 +314,6 @@
                     <li><strong>Word2Vec-10k-Public</strong> - Word2Vec embeddings with 10k vocabulary (100-dimensional)</li>
                     <li><strong>Custom Word Embeddings</strong> - Placeholder for future custom embeddings (not yet implemented)</li>
                 </ul>
-                <p style="margin-top: 10px;">
-                    <strong>Note:</strong> Make sure to download the embedding files first. See the README for instructions.
-                </p>
             </div>
 
             <div class="input-section">
@@ -326,7 +322,7 @@
                     <input type="text" id="word-input" placeholder="e.g., king, computer, happy" />
                 </div>
 
-                <button id="search-btn">Search</button>
+                <button id="search-btn">Explore Embeddings</button>
             </div>
 
             <div class="error-message" id="error-message"></div>
@@ -497,7 +493,7 @@
             const models = [
                 { key: 'glove', name: 'GloVe', class: 'glove' },
                 { key: 'word2vec_10k_public', name: 'Word2Vec-10k-Public', class: 'word2vec-10k-public' },
-                { key: 'custom', name: 'Custom Word Embeddings', class: 'custom' }
+                { key: 'custom', name: 'Conor\'s Word Embeddings', class: 'custom' }
             ];
 
             // Display Most Similar Words for each model
