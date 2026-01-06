@@ -260,7 +260,7 @@ def get_embedding():
                 'error': f'GloVe embeddings not found at {GLOVE_PATH}'
             }
     
-    if embeddings['glove'] and embeddings['glove'] is not None:
+    if embeddings['glove'] is not None:
         if word_glove in embeddings['glove']:
             embedding_vector = embeddings['glove'][word_glove].tolist()
             similar_words = find_most_similar_glove(word_glove, embeddings['glove'])
@@ -284,7 +284,7 @@ def get_embedding():
                 'error': f'ConceptNet embeddings not found at {CONCEPTNET_PATH}'
             }
     
-    if embeddings['conceptnet'] and embeddings['conceptnet'] is not None:
+    if embeddings['conceptnet'] is not None:
         if word_conceptnet in embeddings['conceptnet']:
             embedding_vector = embeddings['conceptnet'][word_conceptnet].tolist()
             similar_words = find_most_similar_glove(word_conceptnet, embeddings['conceptnet'])
@@ -308,7 +308,7 @@ def get_embedding():
                 'error': f'Word2Vec-Tiny embeddings not found at {WORD2VEC_TINY_PATH}'
             }
     
-    if embeddings['word2vec_tiny'] and embeddings['word2vec_tiny'] is not None:
+    if embeddings['word2vec_tiny'] is not None:
         try:
             embedding_vector = embeddings['word2vec_tiny'][word_w2v].tolist()
             similar = embeddings['word2vec_tiny'].most_similar(word_w2v, topn=12)
