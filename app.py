@@ -110,11 +110,15 @@ def load_conceptnet_embeddings(file_path, max_words=None):
             first_line = f.readline().strip()
             parts = first_line.split()
             
-            # Check if first line is metadata (two integers or numbers)
-            try:
-                is_metadata = len(parts) == 2 and all(p.lstrip('-').isdigit() for p in parts)
-            except:
-                is_metadata = False
+            # Check if first line is metadata (two numbers: vocab_size dimensions)
+            is_metadata = False
+            if len(parts) == 2:
+                try:
+                    int(parts[0])  # vocab size should be an integer
+                    int(parts[1])  # dimensions should be an integer
+                    is_metadata = True
+                except ValueError:
+                    pass
             
             if not is_metadata:
                 # First line is a word embedding, process it
