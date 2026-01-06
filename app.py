@@ -103,6 +103,11 @@ def load_custom_embeddings(file_path):
         None (not yet implemented)
     """
     # TODO: Implement custom embeddings loading logic
+    # Expected implementation:
+    # - Support common embedding formats (text, binary, Word2Vec format)
+    # - Return either a dictionary (like GloVe) or KeyedVectors object (like Word2Vec)
+    # - Add error handling for missing files and invalid formats
+    # - Consider memory management for large embedding files
     logging.info("Custom embeddings feature is not yet implemented")
     return None
 
