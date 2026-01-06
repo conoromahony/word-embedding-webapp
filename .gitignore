@@ -36,6 +36,7 @@ wheels/
 # Word embedding files (too large to commit)
 *.bin
 *.txt
+!requirements.txt
 *.vec
 *.gz
 glove/
