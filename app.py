@@ -17,6 +17,7 @@ GLOVE_PATH = 'embeddings/glove.6B.50d.txt'
 # Word2Vec-10k-Public: Word2Vec embeddings with 10k vocabulary for public use
 WORD2VEC_10K_PUBLIC_PATH = 'embeddings/word2vec-10k-public.bin'
 # Custom Word Embeddings: Placeholder for future custom embeddings (not yet implemented)
+# This path is reserved for future use when custom embeddings loading is implemented
 CUSTOM_EMBEDDINGS_PATH = 'embeddings/custom-embeddings.bin'
 GLOVE_MAX_WORDS = int(os.environ.get('GLOVE_MAX_WORDS', '40000'))
 
@@ -263,8 +264,11 @@ def get_embedding():
                 }
     
     # Process Custom embeddings (placeholder - not yet implemented)
+    # Note: Custom embeddings are not yet implemented. When implemented, this should
+    # follow the same pattern as other embeddings (check file existence, load, process)
     if embeddings['custom'] is None:
         # Placeholder: Always show a message that custom embeddings are not yet implemented
+        # When implementing, check if CUSTOM_EMBEDDINGS_PATH exists before showing error
         results['custom'] = {
             'error': 'Custom word embeddings feature is not yet implemented'
         }
