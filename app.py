@@ -17,7 +17,7 @@ GLOVE_PATH = 'embeddings/glove.6B.50d.txt'
 # ConceptNet Numberbatch: Multi-lingual word embeddings with common sense knowledge
 CONCEPTNET_PATH = 'embeddings/numberbatch-en-19.08.txt'
 # Word2Vec-Tiny: Lightweight Word2Vec embeddings for testing and development
-WORD2VEC_TINY_PATH = 'embeddings/word2vec-tiny.bin'
+WORD2VEC_TINY_PATH = 'embeddings/word2vec-10k-public.bin'
 GLOVE_MAX_WORDS = int(os.environ.get('GLOVE_MAX_WORDS', '40000'))
 
 # Global variables to store loaded embeddings
@@ -361,53 +361,6 @@ def get_embedding():
     })
 
 
-# This function is to help me troubleshoot the format of the embedding words.
-# It prints sample words from the ConceptNet embeddings to the console.
-def print_sample_words_conceptnet(conceptnet_path, num_samples):
-    """
-    Prints sample words from ConceptNet Numberbatch embeddings.
-    """
-    if not os.path.exists(conceptnet_path):
-        print(f"ConceptNet file not found: {conceptnet_path}")
-        return
-
-    print("\nSample words from ConceptNet embeddings:")
-    with open(conceptnet_path, 'r', encoding='utf-8') as f:
-        # Skip the header line (if it exists)
-        header_seen = False
-        for line in f:
-            if not header_seen:
-                header_seen = True
-                continue
-            parts = line.strip().split()
-            word = parts[0]
-            if num_samples % 1000 == 0:
-                print(word)
-            num_samples -= 1
-            if num_samples <= 0:
-                break
-
-
-# This function is to help me troubleshoot the format of the embedding words.
-# It prints sample words from the Word2Vec-Tiny embeddings to the console.
-def print_sample_words_word2vec_tiny(word2vec_path, num_samples):
-    """
-    Prints sample words from Word2Vec-Tiny embeddings loaded using gensim.
-    """
-    if not os.path.exists(word2vec_path):
-        print(f"Word2Vec-Tiny file not found: {word2vec_path}")
-        return
-
-    try:
-        print("\nSample words from Word2Vec-Tiny embeddings:")
-        model = KeyedVectors.load_word2vec_format(word2vec_path, binary=True)
-        for idx, word in enumerate(model.index_to_key):
-            print(word)
-
-    except Exception as e:
-        print(f"Error loading Word2Vec-Tiny: {e}")
-
-
 if __name__ == '__main__':
     # Create embeddings directory if it doesn't exist
     os.makedirs('embeddings', exist_ok=True)
@@ -417,8 +370,4 @@ if __name__ == '__main__':
     host = os.environ.get('FLASK_HOST', '127.0.0.1')
     port = int(os.environ.get('FLASK_PORT', '5000'))
     
-    # Call the functions to print sample words
-    print_sample_words_conceptnet(CONCEPTNET_PATH, num_samples=50000)
-    print_sample_words_word2vec_tiny(WORD2VEC_TINY_PATH, num_samples=50)
-
     app.run(debug=debug_mode, host=host, port=port)
