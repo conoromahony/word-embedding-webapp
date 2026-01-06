@@ -1,5 +1,3 @@
-# Word Embedding Web Application
-
 A Flask-based web application for exploring and comparing word embeddings across multiple popular pre-trained models simultaneously.
 
 ## Features
@@ -10,7 +8,7 @@ A Flask-based web application for exploring and comparing word embeddings across
 - 🎯 Support for multiple embedding models displayed side-by-side:
   - GloVe (6B tokens, 50-dimensional)
   - Word2Vec-10k-Public (100-dimensional)
-  - Custom Word Embeddings (placeholder for future implementation)
+  - Conor's Word Embeddings (placeholder for future implementation)
 - 💅 Clean and intuitive user interface with table-based comparison view
 
 ## Prerequisites
@@ -58,67 +56,41 @@ You'll need the `glove.6B.50d.txt` file (50-dimensional vectors).
 
 Word2Vec-10k-Public is a Word2Vec model with 10k vocabulary, useful for testing and development with lower memory requirements.
 
-**Option 1: Train your own (recommended for testing)**
 ```bash
 cd embeddings
-# Create a small Word2Vec model from a text corpus
-# This requires the gensim library
-python << EOF
+import gensim.downloader as api
 from gensim.models import Word2Vec
-from gensim.models.word2vec import LineSentence
-from gensim.test.utils import datapath
 
-# For testing, you can use gensim's test data
-# In production, replace with your own corpus
-from gensim.test.utils import common_texts
+# Download a public corpus automatically
+corpus = api.load("text8")
 
-model = Word2Vec(sentences=common_texts, vector_size=100, window=5, min_count=1, workers=4)
-model.wv.save_word2vec_format('word2vec-10k-public.bin', binary=True)
+model = Word2Vec(sentences=corpus, vector_size=100, window=5, min_count=10,  workers=4)
+print("Vocabulary size:", len(model.wv))
+model.wv.save_word2vec_format("word2vec-10k-public.bin", binary=True)
+
 print("Word2Vec-10k-Public model created successfully!")
 EOF
 cd ..
 ```
 
-**Option 2: Download pre-trained Word2Vec-10k-Public**
-```bash
-cd embeddings
-# Note: You may need to find or create a smaller Word2Vec model
-# Alternatively, use a subset of the full Word2Vec model
-# For testing purposes, train as shown in Option 1
-cd ..
-```
-
 **Note:** Word2Vec-10k-Public is meant to be a lightweight model. If you need production-quality embeddings, consider using the full Word2Vec Google News model or another pre-trained model and adapting the code accordingly.
 
-### Custom Word Embeddings (Placeholder)
+### Conor's Word Embeddings (Placeholder)
 
-Custom word embeddings support is a placeholder for future implementation. This will allow you to load your own custom-trained word embeddings.
+This is a placeholder for future implementation.
 
 ## Configuration
 
 You can customize the application using environment variables:
 
-**Embedding File Paths:**
 ```bash
-export GLOVE_PATH=/path/to/your/glove.6B.50d.txt
-export WORD2VEC_10K_PUBLIC_PATH=/path/to/your/word2vec-10k-public.bin
-export CUSTOM_EMBEDDINGS_PATH=/path/to/your/custom-embeddings.bin
-export GLOVE_MAX_WORDS=400000  # Maximum words to load from GloVe (default: 400000)
+export GLOVE_MAX_WORDS=40000  # Maximum words to load from GloVe (default: 40000)
 ```
 
 By default, the application looks for:
 - GloVe: `embeddings/glove.6B.50d.txt`
 - Word2Vec-10k-Public: `embeddings/word2vec-10k-public.bin`
 - Custom Word Embeddings: `embeddings/custom-embeddings.bin` (placeholder, not yet implemented)
-
-**Performance Note:** Loading 400,000 GloVe embeddings requires significant memory (~1-2 GB). Reduce `GLOVE_MAX_WORDS` if you have memory constraints.
-
-**Server Configuration:**
-```bash
-export FLASK_DEBUG=true        # Enable debug mode (default: false, NOT recommended for production)
-export FLASK_HOST=0.0.0.0     # Bind to all interfaces (default: 127.0.0.1)
-export FLASK_PORT=8080        # Custom port (default: 5000)
-```
 
 **Security Note:** Never run with `FLASK_DEBUG=true` and `FLASK_HOST=0.0.0.0` in production environments.
 
@@ -131,7 +103,7 @@ python app.py
 
 2. Open your web browser and navigate to:
 ```
-http://localhost:5000
+http://127.0.0.1:5000/
 ```
 
 3. The application will automatically create the `embeddings` directory if it doesn't exist.
@@ -146,7 +118,7 @@ http://localhost:5000
 4. Each column shows results from a different embedding model:
    - GloVe (purple gradient)
    - Word2Vec-10k-Public (blue gradient)
-   - Custom Word Embeddings (teal gradient, placeholder)
+   - Conor's Word Embeddings (teal gradient, placeholder)
 
 ## Project Structure
 
